@@ -1,0 +1,26 @@
+{
+  "name": "kwikearn-backend",
+  "version": "1.0.0",
+  "description": "Backend API for Kwikearn registration and referral system",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "keywords": [
+    "kwikearn",
+    "backend",
+    "supabase",
+    "express"
+  ],
+  "author": "CyberHawk",
+  "license": "ISC",
+  "dependencies": {
+    "@supabase/supabase-js": "^2.39.6",
+    "cors": "^2.8.5",
+    "dotenv": "^17.1.0",
+    "express": "^5.1.0",
+    "resend": "^4.6.0",
+    "supabase": "^2.30.4"
+  }
+}

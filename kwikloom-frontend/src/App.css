@@ -1,0 +1,61 @@
+/* src/App.css */
+
+/* Modern Google Fonts */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Sora:wght@400;600;700&display=swap');
+
+/* Base Reset */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body, html {
+  min-height: 100vh;
+  width: 100%;
+  font-family: 'Sora', 'Inter', sans-serif;
+  background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+  color: white;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+}
+
+/* App wrapper for center alignment */
+.App {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+}
+
+/* Placeholder styling for modern input appearance */
+input::placeholder {
+  color: #bbb;
+  opacity: 0.8;
+}
+
+/* Button styling globally */
+button {
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+/* Animated Bitcoin bounce */
+@keyframes bounce-slow {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-15px);
+  }
+}
+
+.animate-bounce-slow {
+  animation: bounce-slow 3s infinite;
+}
+
+/* Font utility if used in className */
+.font-sora {
+  font-family: 'Sora', 'Inter', sans-serif;
+}

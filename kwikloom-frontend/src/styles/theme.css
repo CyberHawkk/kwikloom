@@ -1,0 +1,94 @@
+/* All the VIP ambient styles for buttons, inputs, container */
+
+.container {
+  max-width: 480px;
+  width: 90vw;
+  background: rgba(13, 43, 37, 0.75);
+  border-radius: 1.8rem;
+  padding: 3rem 3rem 3.5rem;
+  box-shadow:
+    0 0 30px rgba(29, 233, 182, 0.35),
+    inset 0 0 25px rgba(0, 163, 127, 0.6);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  color: #a0f0dc;
+  text-align: center;
+  user-select: text;
+  margin: 2rem auto;
+  transition: box-shadow 0.3s ease;
+}
+
+.container:hover,
+.container:focus-within {
+  box-shadow:
+    0 0 40px rgba(29, 233, 182, 0.55),
+    inset 0 0 35px rgba(0, 163, 127, 0.8);
+}
+
+.google-auth-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.8rem;
+  width: 100%;
+  padding: 1rem 2rem;
+  background: linear-gradient(135deg, #0d2f3f, #005662);
+  border-radius: 1.4rem;
+  font-family: "Sora", system-ui, sans-serif;
+  font-weight: 700;
+  font-size: 1.2rem;
+  color: #1de9b6;
+  box-shadow:
+    0 0 8px rgba(29, 233, 182, 0.3),
+    inset 0 0 12px #1de9b6;
+  border: none;
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.4s ease, box-shadow 0.4s ease;
+}
+
+.google-auth-btn:hover,
+.google-auth-btn:focus-visible {
+  background: linear-gradient(135deg, #18e6b4, #00a37f);
+  box-shadow:
+    0 0 18px #1de9b6,
+    inset 0 0 18px #1de9b6;
+  outline: none;
+  outline-offset: 2px;
+  outline: 3px solid #00a37f;
+}
+
+input,
+select,
+textarea {
+  width: 100%;
+  padding: 1rem 1.5rem;
+  border-radius: 1rem;
+  border: 2px solid #064535;
+  background-color: #04453b;
+  color: #a0f0dc;
+  font-family: "Inter", system-ui, sans-serif;
+  font-weight: 600;
+  font-size: 1.1rem;
+  box-shadow: inset 0 0 6px #1de9b6;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+  outline-offset: 2px;
+  user-select: text;
+}
+
+input::placeholder,
+select::placeholder,
+textarea::placeholder {
+  color: #60cbbf;
+  font-weight: 400;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  outline: none;
+  border-color: #1de9b6;
+  box-shadow: inset 0 0 10px #1de9b6, 0 0 15px #1de9b6;
+  background-color: #022f29;
+  color: #d1fff7;
+}

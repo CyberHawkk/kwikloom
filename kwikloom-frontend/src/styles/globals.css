@@ -1,0 +1,60 @@
+/* Basic resets + global styles */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+/* Global CSS variables for colors & fonts */
+:root {
+  --color-bg-dark: #0a1a22;
+  --color-bg-darker: #051218;
+  --color-accent: #1de9b6;
+  --color-accent-dark: #00a37f;
+  --color-text-primary: #a0f0dc;
+  --color-text-secondary: #60cbbf;
+  --color-shadow-glow: rgba(29, 233, 182, 0.4);
+  --font-primary: "Sora", system-ui, sans-serif;
+  --font-secondary: "Inter", system-ui, sans-serif;
+}
+
+/* Ambient VIP background for the entire app */
+body, html, #root {
+  height: 100%;
+  font-family: var(--font-primary);
+  color: var(--color-text-primary);
+  background-color: var(--color-bg-dark);
+
+  /* Layered ambient gradients & subtle noise */
+  background-image:
+    radial-gradient(circle at top left, #13f7c9aa 15%, transparent 70%),
+    radial-gradient(circle at bottom right, #0da17b99 20%, transparent 60%),
+    repeating-radial-gradient(circle, transparent 0, transparent 10px, #032a25 11px, #051a1c 14px),
+    linear-gradient(135deg, #051218 0%, #0a1a22 100%);
+  background-blend-mode: screen, screen, multiply, normal;
+  background-repeat: no-repeat;
+  background-size: cover;
+  background-attachment: fixed;
+  
+  /* Optional subtle animated shimmer effect */
+  animation: ambient-shimmer 20s ease-in-out infinite;
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+/* Smooth shimmer animation for ambient effect */
+@keyframes ambient-shimmer {
+  0%, 100% {
+    background-position: 0% 0%, 100% 100%, 0 0, 0 0;
+  }
+  50% {
+    background-position: 25% 25%, 75% 75%, 5px 5px, 0 0;
+  }
+}
