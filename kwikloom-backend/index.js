@@ -1,67 +1,72 @@
-// index.js
+/**
+ * ✅ KwikLoom Backend
+ * - Loads env config
+ * - Validates environment variables
+ * - Initializes Supabase & Resend clients
+ * - Sets up Express server with confirm-payment route
+ */
+
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import { createClient } from "@supabase/supabase-js";
+import { Resend } from "resend";
+import confirmPaymentRoute from "./routes/confirmPayment.js";
 
-dotenv.config();
+// ✅ Load environment variables
+dotenv.config({ override: true });
 
-const app = express();
-const port = process.env.PORT || 5000;
+// ✅ Utility: Warn if any required env var is missing
+function checkEnvVar(name) {
+  if (!process.env[name]) {
+    console.warn(`⚠️ Environment variable ${name} is not set`);
+  }
+}
 
-app.use(cors());
-app.use(express.json());
+// ✅ Check required environment variables
+checkEnvVar("SUPABASE_URL");
+checkEnvVar("SUPABASE_SERVICE_ROLE_KEY");
+checkEnvVar("RESEND_API_KEY");
+checkEnvVar("FROM_EMAIL");
+checkEnvVar("EMAIL_API_URL");
+checkEnvVar("EMAIL_API_KEY");
+checkEnvVar("PORT"); // Optional fallback
 
+// ✅ Log some for debugging (safe ones)
+console.log("🔐 SUPABASE_URL:", process.env.SUPABASE_URL);
+console.log("📩 RESEND_API_KEY:", process.env.RESEND_API_KEY);
+
+// ✅ Initialize Supabase and Resend clients
 const supabase = createClient(
   process.env.SUPABASE_URL,
   process.env.SUPABASE_KEY
 );
+const resend = new Resend(process.env.RESEND_API_KEY);
 
-// Validate referral code
-app.post("/api/validate-referral", async (req, res) => {
-  const { code } = req.body;
-  const { data, error } = await supabase
-    .from("users")
-    .select("*")
-    .eq("referralCode", code)
-    .single();
+// ✅ Initialize Express app
+const app = express();
+const PORT = process.env.PORT || 5000;
 
-  if (error || !data) return res.json({ success: false });
-  return res.json({ success: true });
-});
-// Route: Register New User
-app.post("/register", async (req, res) => {
-  const { name, email, password, referralCode } = req.body;
+// ✅ Middleware
+app.use(cors());
+app.use(express.json());
 
-  try {
-    const { data: existingUser, error: findError } = await supabase
-      .from("users")
-      .select("*")
-      .eq("email", email)
-      .single();
-
-    if (existingUser) {
-      return res.status(400).json({ message: "Email already registered." });
-    }
-
-    const { error: insertError } = await supabase.from("users").insert([
-      {
-        name,
-        email,
-        password, // ⚠️ Hash this in production
-        referralCode: referralCode || null, // 👈 Use "referralCode" if that's how it's named in your table
-      },
-    ]);
-
-    if (insertError) throw insertError;
-
-    res.status(200).json({ message: "User registered successfully!" });
-  } catch (error) {
-    console.error("Registration error:", error.message);
-    res.status(500).json({ message: "Registration failed. Try again." });
-  }
+// ✅ Inject clients into each request
+app.use((req, res, next) => {
+  req.supabase = supabase;
+  req.resend = resend;
+  next();
 });
 
-app.listen(port, () => {
-  console.log(`✅ Backend server running at http://localhost:${port}`);
+// ✅ Base route
+app.get("/", (req, res) => {
+  res.send("✅ KwikLoom backend is live!");
+});
+
+// ✅ API routes
+app.use("/api/confirm-payment", confirmPaymentRoute);
+
+// ✅ Start server
+app.listen(PORT, () => {
+  console.log(`🚀 KwikLoom backend running at http://localhost:${PORT}`);
 });

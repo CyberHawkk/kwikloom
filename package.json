@@ -1,18 +1,17 @@
 {
-  "name": "kwikearn-backend",
+  "name": "kwikloom",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "private": true,
+  "description": "Root package for kwikloom frontend and backend",
   "scripts": {
-    "start": "node index.js"
+    "dev": "concurrently \"npm run dev --prefix kwikloom-frontend\" \"npm start --prefix kwikloom-backend\"",
+    "frontend": "npm run dev --prefix kwikloom-frontend",
+    "backend": "npm start --prefix kwikloom-backend"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "devDependencies": {
+    "concurrently": "^8.2.0"
+  },
   "dependencies": {
-    "cors": "^2.8.5",
-    "dotenv": "^16.0.3",
-    "express": "^4.18.2",
-    "supabase-js": "^2.43.4"
+    "lucide-react": "^0.525.0"
   }
 }

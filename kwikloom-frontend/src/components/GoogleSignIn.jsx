@@ -1,7 +1,9 @@
 import React, { useState } from "react";
-import { signInWithPopup } from "firebase/auth";
 import { auth, provider } from "../firebase";
 import "../styles/theme.css"; // Import your theme styles
+import { signInWithRedirect } from "firebase/auth";
+
+signInWithRedirect(auth, provider);
 
 const steps = [
   { icon: "💰", text: "Pay ₵100 one-time to activate your account." },

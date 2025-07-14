@@ -1,32 +1,47 @@
 import React from "react";
 import Particles from "react-tsparticles";
-import { loadFull } from "tsparticles";
 
 export default function BackgroundParticles() {
-  const particlesInit = async (engine) => {
-    await loadFull(engine);
-  };
-
   return (
     <Particles
       id="tsparticles"
-      init={particlesInit}
+      className="absolute inset-0 z-0"
       options={{
-        fullScreen: { enable: true, zIndex: 0 },
+        fullScreen: { enable: false },
         background: {
-          color: "#0d0f1a",
+          color: "#0f172a",
         },
         particles: {
-          number: { value: 50 },
-          size: { value: 3 },
-          move: { enable: true, speed: 1 },
+          number: { value: 50, density: { enable: true, area: 800 } },
           color: { value: "#00f2ff" },
+          shape: { type: "circle" },
+          size: { value: 3, random: true },
+          move: {
+            enable: true,
+            speed: 1,
+            direction: "none",
+            outModes: { default: "bounce" },
+          },
           links: {
             enable: true,
-            color: "#00f2ff",
             distance: 120,
+            color: "#00f2ff",
+            opacity: 0.4,
+            width: 1,
           },
         },
+        interactivity: {
+          events: {
+            onHover: { enable: true, mode: "repulse" },
+            onClick: { enable: true, mode: "push" },
+            resize: true,
+          },
+          modes: {
+            repulse: { distance: 100, duration: 0.4 },
+            push: { quantity: 4 },
+          },
+        },
+        detectRetina: true,
       }}
     />
   );

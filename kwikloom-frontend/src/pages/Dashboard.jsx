@@ -4,6 +4,8 @@ import { onAuthStateChanged } from "firebase/auth";
 import { QRCodeCanvas } from "qrcode.react";
 import "@fontsource/sora";
 import "@fontsource/orbitron";
+import { useNavigate } from "react-router-dom";
+import { toast } from "react-toastify";
 
 export default function Dashboard() {
   const [user, setUser] = useState(null);
@@ -14,17 +16,25 @@ export default function Dashboard() {
   const [isWithdrawing, setIsWithdrawing] = useState(false);
   const [withdrawMessage, setWithdrawMessage] = useState("");
 
-  const BTC_ADDRESS = "bc1qzllw832k6m6p5mk9tzp2pv3ys66sw6tta2w4u8";
+  const navigate = useNavigate();
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (u) => {
       if (u) {
+        if (!u.emailVerified) {
+          toast.error("Please verify your email to access the dashboard.");
+          navigate("/verify-email");
+          return;
+        }
+
         setUser(u);
         await fetchUserData(u.email);
       } else {
         setUser(null);
+        navigate("/"); // Optional: Redirect unauthenticated users
       }
     });
+
     return () => unsubscribe();
   }, []);
 
@@ -76,6 +86,14 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen bg-[#020c1b] text-white font-sora px-4 py-10 flex items-center justify-center">
       <div className="w-full max-w-4xl space-y-10 bg-[#04192c] rounded-xl shadow-2xl p-8 relative">
+
+        {/* ← Back to Sign In */}
+        <button
+          onClick={() => navigate(-1)}
+          className="absolute top-4 right-4 text-sm text-cyan-300 hover:underline"
+        >
+          ← Back
+        </button>
 
         {/* 🪙 Bouncing Bitcoin Icon */}
         <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 animate-bounce">
@@ -132,28 +150,6 @@ export default function Dashboard() {
             includeMargin={true}
             className="mx-auto"
           />
-        </div>
-
-        {/* 💰 Bitcoin Payment */}
-        <div className="bg-[#061625] p-6 rounded-xl border border-yellow-500 text-center">
-          <h2 className="text-lg font-bold text-yellow-400 mb-2">
-            Activate with ₵100 in BTC
-          </h2>
-          <p className="text-sm text-yellow-300 mb-4">
-            Send exactly ₵100 in Bitcoin to this wallet:
-          </p>
-          <QRCodeCanvas
-            value={BTC_ADDRESS}
-            size={160}
-            bgColor="#ffffff"
-            fgColor="#000000"
-            level="H"
-            includeMargin={true}
-            className="mx-auto mt-2"
-          />
-          <p className="mt-3 text-green-300 text-sm break-all font-mono">
-            {BTC_ADDRESS}
-          </p>
         </div>
 
         {/* 🏧 Withdraw Button */}

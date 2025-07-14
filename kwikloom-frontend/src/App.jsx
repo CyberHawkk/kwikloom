@@ -6,35 +6,48 @@ import {
   Navigate,
   useNavigate,
 } from "react-router-dom";
+
+import Landing from "./pages/Landing";
 import Registration from "./pages/Registration";
+import Login from "./pages/Login";
+import ConfirmCode from "./pages/ConfirmCode";
 import Dashboard from "./pages/Dashboard";
+import ResetPassword from "./pages/ResetPassword";
+import ActivatePage from "./pages/ActivatePage";
+import VerifyEmail from "./pages/VerifyEmail";
+import AdminDashboard from "./pages/AdminDashboard";
+
 import {
   auth,
-  provider,
-  signInWithPopup,
-  signOut,
   onAuthStateChanged,
-  sendPasswordResetEmail,
-  signInWithEmailAndPassword,
+  signOut,
+  db,
+  doc,
+  getDoc,
+  setDoc,
 } from "./firebase";
-
+import { supabase } from "./supabase";
 import { ToastContainer, toast } from "react-toastify";
+
 import "react-toastify/dist/ReactToastify.css";
 import "@fontsource/orbitron";
 import "@fontsource/sora";
 import "@fontsource/inter";
-import { motion } from "framer-motion";
-import BackgroundParticles from "./components/BackgroundParticles";
 
-function AppWrapper() {
-  return (
-    <Router>
-      <App />
-      <ToastContainer position="top-right" autoClose={3000} />
-    </Router>
-  );
+import BackgroundParticles from "./components/BackgroundParticles";
+import { motion } from "framer-motion";
+
+// 🔁 Referral Code Generator
+function generateReferralCode() {
+  const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
+  let code = "kwik-";
+  for (let i = 0; i < 6; i++) {
+    code += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return code;
 }
 
+// 💸 Animated Bitcoin Logo
 function BouncingBTC() {
   return (
     <motion.div
@@ -58,310 +71,142 @@ function BouncingBTC() {
   );
 }
 
-function App() {
+// 🔒 Checks Supabase Payment Status
+function ProtectedRoute({ children }) {
+  const [hasPaid, setHasPaid] = useState(null);
+  const [checking, setChecking] = useState(true);
+
+  useEffect(() => {
+    const checkPayment = async () => {
+      const currentUser = auth.currentUser;
+      if (!currentUser) {
+        setHasPaid(false);
+        setChecking(false);
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from("users")
+        .select("payment_confirmed")
+        .eq("email", currentUser.email.toLowerCase())
+        .maybeSingle();
+
+      setHasPaid(!error && data?.payment_confirmed === true);
+      setChecking(false);
+    };
+
+    checkPayment();
+  }, []);
+
+  if (checking) {
+    return (
+      <div className="h-screen text-white flex items-center justify-center">
+        Checking access...
+      </div>
+    );
+  }
+
+  return hasPaid ? children : <Navigate to="/confirm-code" replace />;
+}
+
+// 🎯 Main App Logic
+function AppContent() {
   const [user, setUser] = useState(null);
-  const [darkMode, setDarkMode] = useState(true);
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
   const [referralCode, setReferralCode] = useState("");
+  const [isAdmin, setIsAdmin] = useState(false);
   const navigate = useNavigate();
-  const [showAnnouncement, setShowAnnouncement] = useState(true);
 
-  const handleLogin = async () => {
-    try {
-      const result = await signInWithPopup(auth, provider);
-      setUser(result.user);
-      toast.success(`Welcome ${result.user.displayName || result.user.email}`);
-      navigate("/dashboard");
-    } catch (error) {
-      toast.error("Login failed: " + error.message);
-    }
-  };
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+      if (!currentUser) {
+        setUser(null);
+        setReferralCode("");
+        setIsAdmin(false);
+        return;
+      }
 
-  const handleEmailLogin = async () => {
-    try {
-      const result = await signInWithEmailAndPassword(auth, email, password);
-      setUser(result.user);
-      toast.success("Signed in successfully!");
-      navigate("/dashboard");
-    } catch (error) {
-      toast.error("Email login failed: " + error.message);
-    }
-  };
+      setUser(currentUser);
 
-  const handleResetPassword = async () => {
-    try {
-      await sendPasswordResetEmail(auth, email);
-      toast.success("Password reset email sent!");
-    } catch (error) {
-      toast.error("Error: " + error.message);
-    }
-  };
+      const { data, error } = await supabase
+        .from("users")
+        .select("referral_code, is_admin")
+        .eq("email", currentUser.email.toLowerCase())
+        .maybeSingle();
+
+      if (data?.referral_code) setReferralCode(data.referral_code);
+      if (data?.is_admin) setIsAdmin(true);
+    });
+
+    return () => unsubscribe();
+  }, []);
 
   const handleLogout = async () => {
     await signOut(auth);
     setUser(null);
-    toast.info("Logged out successfully.");
+    toast.success("Logged out.");
     navigate("/");
   };
 
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      setUser(currentUser);
-    });
-    return () => unsubscribe();
-  }, []);
-
-  const theme = darkMode ? "text-white" : "text-gray-800";
-
   return (
-    <div
-      className={`min-h-screen font-inter relative ${theme} bg-gradient-to-br from-[#0f0c29] via-[#302b63] to-[#24243e]`}
-    >
+    <div className="min-h-screen bg-gradient-to-br from-[#0f0c29] via-[#302b63] to-[#24243e] font-sora text-white relative">
       <BackgroundParticles />
 
-      <div className="absolute top-4 right-4 z-50 flex flex-col items-center">
+      <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-50">
         <BouncingBTC />
-        <button
-          className="px-4 py-1 border border-cyan-500 text-cyan-300 bg-black/20 rounded text-sm shadow-md hover:bg-cyan-500/10"
-          onClick={() => setDarkMode(!darkMode)}
-        >
-          {darkMode ? "☀ Light" : "🌙 Dark"}
-        </button>
       </div>
 
-      {showAnnouncement && (
-        <motion.div
-          initial={{ y: -100, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          className="fixed top-6 left-1/2 transform -translate-x-1/2 bg-black/70 text-white px-8 py-6 rounded-xl shadow-2xl z-50 w-[90%] max-w-xl text-center border border-cyan-400 backdrop-blur-md"
-        >
-          <h2 className="text-2xl font-bold font-orbitron text-cyan-400 mb-4 tracking-wide">
-            Welcome to KwikLoom!
-          </h2>
-          <p className="text-lg leading-relaxed font-sora space-y-3">
-            <span>Activate your account with a one-time ₵100 BTC payment.</span>
-            <br />
-            <span>Receive your unique referral code instantly.</span>
-            <br />
-            <span>Earn ₵20 commission for every successful referral.</span>
-            <br />
-            <span>
-              Secure, blockchain-powered platform designed for students and entrepreneurs.
-            </span>
-            <br />
-            <span className="text-yellow-300 text-sm italic block mt-3">
-              *Please note: Only payments sent to the official BTC wallet address are valid.
-            </span>
-          </p>
-
-          <button
-            onClick={() => setShowAnnouncement(false)}
-            className="mt-5 text-sm underline text-cyan-300 hover:text-cyan-500 transition"
-          >
-            Dismiss Message
-          </button>
-        </motion.div>
-      )}
-
       <Routes>
+        <Route path="/" element={<Landing />} />
+        <Route path="/register" element={<Registration />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
+        <Route path="/confirm-code" element={<ConfirmCode />} />
+        <Route path="/activate" element={<ActivatePage />} />
+        <Route path="/verify-email" element={<VerifyEmail />} />
+
+        {/* 🛡️ Admin Route */}
         <Route
-          path="/"
+          path="/admin"
           element={
-            !user ? (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="min-h-screen flex items-center justify-center p-4 z-10 relative"
-              >
-                <div className="relative w-full max-w-xl rounded-3xl bg-white/5 border border-cyan-500 backdrop-blur-xl shadow-2xl p-10 text-center font-orbitron">
-                  <div className="flex flex-col items-center mb-6 space-y-3 animate-bounce">
-                    {/* Neon SVG Logo */}
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      viewBox="0 0 64 64"
-                      className="w-20 h-20"
-                    >
-                      <defs>
-                        <filter
-                          id="glow"
-                          x="-50%"
-                          y="-50%"
-                          width="200%"
-                          height="200%"
-                          colorInterpolationFilters="sRGB"
-                        >
-                          <feDropShadow
-                            dx="0"
-                            dy="0"
-                            stdDeviation="2"
-                            floodColor="#06b6d4"
-                            floodOpacity="0.9"
-                          />
-                          <feDropShadow
-                            dx="0"
-                            dy="0"
-                            stdDeviation="5"
-                            floodColor="#0ea5e9"
-                            floodOpacity="0.7"
-                          />
-                        </filter>
-                      </defs>
-
-                      <circle
-                        cx="32"
-                        cy="32"
-                        r="28"
-                        stroke="#06b6d4"
-                        strokeWidth="3"
-                        fill="none"
-                        filter="url(#glow)"
-                      />
-                      <path
-                        d="M20 20 L44 44 M44 20 L20 44"
-                        stroke="#0ea5e9"
-                        strokeWidth="4"
-                        strokeLinecap="round"
-                        filter="url(#glow)"
-                      />
-                    </svg>
-                  </div>
-
-                  <h1 className="text-4xl font-bold text-cyan-300 mb-2 tracking-widest">
-                    KwikLoom
-                  </h1>
-                  <p className="text-sm text-white mb-6">
-                    🚀 One-time BTC activation. Earn ₵20 per referral.
-                  </p>
-
-                  <button
-                    onClick={handleLogin}
-                    className="w-full py-3 mb-4 rounded-xl bg-gradient-to-r from-cyan-500 to-teal-400 hover:from-cyan-600 hover:to-teal-500 text-white font-bold tracking-wide transition shadow-lg"
-                  >
-                    Sign In with Google
-                  </button>
-
-                  <details className="mt-4 text-left">
-                    <summary className="cursor-pointer text-sm text-cyan-200 hover:underline">
-                      Use Email/Password Instead
-                    </summary>
-                    <div className="mt-4 space-y-3">
-                      <input
-                        type="email"
-                        placeholder="Email"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        className="w-full px-4 py-2 bg-[#1a1f33] border border-cyan-700 text-white rounded-lg focus:outline-none"
-                      />
-                      <input
-                        type="password"
-                        placeholder="Password"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        className="w-full px-4 py-2 bg-[#1a1f33] border border-cyan-700 text-white rounded-lg focus:outline-none"
-                      />
-                      <button
-                        onClick={handleEmailLogin}
-                        className="w-full py-2 rounded-lg bg-cyan-400 hover:bg-cyan-600 text-white font-semibold"
-                      >
-                        Login with Email
-                      </button>
-                      <button
-                        onClick={handleResetPassword}
-                        className="text-xs underline text-cyan-400"
-                      >
-                        Forgot Password?
-                      </button>
-                    </div>
-                  </details>
-
-                  <div className="mt-10 text-left text-sm text-white space-y-4">
-                    <h2 className="text-lg font-semibold text-cyan-300">
-                      📦 How to Join KwikLoom
-                    </h2>
-                    <div className="bg-black/30 p-4 rounded-lg border border-cyan-500">
-                      <p className="mb-2">
-                        💸 To activate your account, send ₵100 worth of BTC to:
-                      </p>
-                      <div className="bg-[#0d1b2a] p-3 rounded-lg overflow-x-auto text-center">
-                        <p className="text-cyan-400 text-xs mb-2">
-                          Official BTC Wallet Address:
-                        </p>
-                        <p className="font-mono break-all text-yellow-400 text-sm">
-                          bc1qzllw832k6m6p5mk9tzp2pv3ys66sw6tta2w4u8
-                        </p>
-                      </div>
-                      <div className="flex justify-center my-4">
-                        <img
-                          src="https://api.qrserver.com/v1/create-qr-code/?data=bc1qzllw832k6m6p5mk9tzp2pv3ys66sw6tta2w4u8&size=150x150"
-                          alt="BTC QR Code"
-                          className="rounded-lg border border-cyan-400 shadow-lg"
-                        />
-                      </div>
-                      <p className="text-xs text-yellow-300 italic mb-2">
-                        *Your activation will be confirmed after payment and
-                        referral verification.
-                      </p>
-                      <div className="mt-4 space-y-2">
-                        <label
-                          htmlFor="referral"
-                          className="block text-cyan-200 font-medium"
-                        >
-                          Enter Referral Code (if any)
-                        </label>
-                        <input
-                          type="text"
-                          id="referral"
-                          placeholder="e.g., kwik-zy8a2"
-                          value={referralCode}
-                          onChange={(e) => setReferralCode(e.target.value)}
-                          className="w-full px-4 py-2 bg-[#0c1323] border border-cyan-700 text-white rounded-lg focus:outline-none"
-                        />
-                        <button
-                          className="w-full py-2 mt-3 bg-gradient-to-r from-cyan-500 to-teal-400 hover:from-cyan-600 hover:to-teal-500 rounded-lg text-white font-bold shadow"
-                        >
-                          ✅ I’ve Paid & Entered Referral Code
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </motion.div>
-            ) : (
-              <Navigate to="/dashboard" replace />
-            )
-          }
-        />
-        <Route
-          path="/dashboard"
-          element={
-            user ? (
-              <div className="relative z-10 py-10 font-sora">
-                <div className="text-center space-y-4">
-                  <h2 className="text-xl font-bold font-orbitron text-cyan-400">
-                    Hello, {user.displayName || user.email}
-                  </h2>
-                  {user.photoURL && (
-                    <img
-                      src={user.photoURL}
-                      alt="Profile"
-                      className="w-20 h-20 rounded-full mx-auto border-4 border-cyan-400 shadow"
-                    />
-                  )}
-                  <button onClick={handleLogout} className="neon-btn-alt mt-3">
-                    Logout
-                  </button>
-                </div>
-                <Dashboard />
-              </div>
+            isAdmin ? (
+              <AdminDashboard />
             ) : (
               <Navigate to="/" replace />
             )
           }
         />
-        <Route path="/register" element={<Registration />} />
+
+        {/* 🎯 Dashboard Route with Admin Redirect */}
+        <Route
+          path="/dashboard"
+          element={
+            isAdmin ? (
+              <Navigate to="/admin" replace />
+            ) : (
+              <ProtectedRoute>
+                <Dashboard
+                  user={user}
+                  referralCode={referralCode}
+                  onLogout={handleLogout}
+                />
+              </ProtectedRoute>
+            )
+          }
+        />
+
+        {/* 🚫 404 fallback */}
+        <Route path="*" element={<Navigate to="/" />} />
       </Routes>
     </div>
+  );
+}
+
+function AppWrapper() {
+  return (
+    <Router>
+      <AppContent />
+      <ToastContainer position="top-right" autoClose={3000} />
+    </Router>
   );
 }
 
