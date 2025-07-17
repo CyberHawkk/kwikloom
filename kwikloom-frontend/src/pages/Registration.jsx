@@ -31,9 +31,6 @@ export default function Registration() {
   const [paymentMethod, setPaymentMethod] = useState("Bitcoin");
 
   const navigate = useNavigate();
-
-  const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
-  const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_KEY;
   const ADMIN_EMAIL = "qwikearn@gmail.com";
 
   const animatedBtn =
@@ -41,20 +38,15 @@ export default function Registration() {
 
   const insertUserToSupabase = async (userData) => {
     try {
-      const res = await fetch(`${SUPABASE_URL}/rest/v1/users`, {
+      const res = await fetch("https://kwikloom-backend.onrender.com/api/register", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          apikey: SUPABASE_KEY,
-          Authorization: `Bearer ${SUPABASE_KEY}`,
-          Prefer: "resolution=merge-duplicates",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(userData),
       });
 
       if (!res.ok) {
         const text = await res.text();
-        console.error("Not JSON response:", text);
+        console.error("Backend error:", text);
         toast.error("Failed to save user");
         return;
       }

@@ -155,7 +155,7 @@ export default function Login() {
     }
 
     try {
-      const res = await fetch("http://localhost:5000/api/confirm-payment", {
+  const res = await fetch("https://kwikloom-backend.onrender.com/api/confirm-payment", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
