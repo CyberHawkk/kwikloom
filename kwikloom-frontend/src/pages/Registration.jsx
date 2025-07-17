@@ -34,7 +34,7 @@ export default function Registration() {
 
   const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
   const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_KEY;
-  const ADMIN_EMAIL = "kwikearn@gmail.com";
+  const ADMIN_EMAIL = "qwikearn@gmail.com";
 
   const animatedBtn =
     "w-full py-3 px-4 rounded-lg text-white font-bold bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-pink-500 hover:to-yellow-500 transition-all duration-300 transform hover:scale-105 active:scale-95 shadow-md hover:shadow-[0_0_15px_rgba(0,255,255,0.7)]";

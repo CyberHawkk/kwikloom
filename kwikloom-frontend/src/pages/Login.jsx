@@ -17,7 +17,7 @@ import "react-toastify/dist/ReactToastify.css";
 import "@fontsource/sora";
 import "@fontsource/inter";
 
-const ADMIN_EMAIL = "kwikearn@gmail.com";
+const ADMIN_EMAIL = "qwikearn@gmail.com";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -236,6 +236,7 @@ export default function Login() {
           {loading ? "Logging in..." : "🔐 Login"}
         </button>
 
+        {/* ✅ Google Sign-In with icon */}
         <button
           onClick={handleGoogleLogin}
           className="w-full flex items-center justify-center gap-2 py-2 mt-3 bg-white text-slate-800 font-semibold rounded shadow hover:bg-slate-100 transition"
@@ -258,7 +259,6 @@ export default function Login() {
           </Link>
         </p>
 
-        {/* ✅ FIXED: Check if user is logged in AND payment is NOT confirmed */}
         {user && userData?.payment_confirmed === false && (
           <div className="mt-6">
             <input
