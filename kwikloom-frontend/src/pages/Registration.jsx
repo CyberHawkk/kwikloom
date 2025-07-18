@@ -1,310 +1,246 @@
-// src/pages/Registration.jsx
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
-  signInWithEmailAndPassword,
-  createUserWithEmailAndPassword,
-  sendPasswordResetEmail,
-  sendEmailVerification,
-  signInWithPopup,
-} from "firebase/auth";
-import { auth, provider } from "../firebase";
-import { toast } from "react-toastify";
+  auth,
+  provider,
+  RecaptchaVerifier,
+  signInWithPhoneNumber,
+  registerWithEmail,
+} from "../firebase";
+import { GoogleAuthProvider, signInWithPopup } from "firebase/auth";
+import { countries } from "../utils/countries";
 import { useNavigate } from "react-router-dom";
-import { FcGoogle } from "react-icons/fc";
-import AnnouncementModal from "../components/AnnouncementModal";
-import "@fontsource/sora";
-import "@fontsource/inter";
-import "react-toastify/dist/ReactToastify.css";
+import { toast } from "react-toastify";
 
-export default function Registration() {
-  const [isLogin, setIsLogin] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
-  const [showModal, setShowModal] = useState(true);
-  const [loading, setLoading] = useState(false);
-  const [step, setStep] = useState(1);
-
-  const [name, setName] = useState("");
+const Register = () => {
+  const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [referralCode, setReferralCode] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [country, setCountry] = useState("");
-  const [paymentMethod, setPaymentMethod] = useState("Bitcoin");
+  const [phoneNumber, setPhoneNumber] = useState("");
+  const [otp, setOtp] = useState("");
+  const [confirmationResult, setConfirmationResult] = useState(null);
+  const [step, setStep] = useState("form"); // form | otp | done
+  const [loading, setLoading] = useState(false);
 
   const navigate = useNavigate();
-  const ADMIN_EMAIL = "qwikearn@gmail.com";
 
-  const animatedBtn =
-    "w-full py-3 px-4 rounded-lg text-white font-bold bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-pink-500 hover:to-yellow-500 transition-all duration-300 transform hover:scale-105 active:scale-95 shadow-md hover:shadow-[0_0_15px_rgba(0,255,255,0.7)]";
-
-  const insertUserToSupabase = async (userData) => {
-    try {
-      const res = await fetch("https://kwikloom-backend.onrender.com/api/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(userData),
-      });
-
-      if (!res.ok) {
-        const text = await res.text();
-        console.error("Backend error:", text);
-        toast.error("Failed to save user");
-        return;
-      }
-
-      await res.json();
-    } catch (error) {
-      console.error("Insert error:", error);
-      toast.error("Failed to save user to database.");
+  useEffect(() => {
+    if (step === "done") {
+      const timer = setTimeout(() => {
+        navigate("/activate"); // Redirect after successful registration
+      }, 2000);
+      return () => clearTimeout(timer);
     }
-  };
+  }, [step, navigate]);
 
-  const handleEmailLogin = async () => {
-    if (!email || !password) {
-      toast.error("Please fill in all fields");
-      return;
+  useEffect(() => {
+    if (step === "otp") {
+      document.querySelector("input[placeholder='Enter OTP']")?.focus();
     }
+  }, [step]);
 
+  const handleEmailRegistration = async (e) => {
+    e.preventDefault();
     setLoading(true);
-
     try {
-      const userCred = await signInWithEmailAndPassword(auth, email, password);
-      const user = userCred.user;
-
-      if (!user.emailVerified) {
-        toast.error("Please verify your email before logging in.");
-        setLoading(false);
-        return;
+      const result = await registerWithEmail(fullName, email, password);
+      if (result.success) {
+        toast.success(result.message); // ✅ Verification email sent!
+        navigate("/login");
+      } else {
+        toast.error(result.message);
       }
-
-      const isAdmin = user.email.toLowerCase() === ADMIN_EMAIL;
-      navigate(isAdmin ? "/admin" : "/confirm-code");
     } catch (err) {
-      console.error("Firebase login error:", err.message);
-      toast.error("Invalid email or password.");
+      toast.error("❌ Unexpected error occurred.");
     } finally {
       setLoading(false);
     }
   };
 
-  const handleGoogleSignIn = async () => {
-    try {
-      const result = await signInWithPopup(auth, provider);
-      const user = result.user;
-      const isAdmin = user.email.toLowerCase() === ADMIN_EMAIL;
-      const referral_code = "kwik-" + user.uid.slice(-6);
-
-      await insertUserToSupabase({
-        email: user.email.toLowerCase(),
-        name: user.displayName || "",
-        referral_code,
-        referred_by: "",
-        country: "Google",
-        payment_method: "Google",
-        method: "Google",
-        payment_confirmed: isAdmin,
-        is_admin: isAdmin,
-      });
-
-      toast.success(`Welcome, ${user.displayName || user.email}`);
-      navigate(isAdmin ? "/admin" : "/confirm-code");
-    } catch (error) {
-      console.error("Google sign-in error:", error.message);
-      toast.error("Google login failed");
-    }
-  };
-
-  const handlePasswordReset = async () => {
-    if (!email) return toast.error("Enter your email first");
-    try {
-      await sendPasswordResetEmail(auth, email);
-      toast.success("📩 Password reset email sent");
-    } catch {
-      toast.error("Failed to send reset link");
-    }
-  };
-
-  const handleInitialSubmit = (e) => {
-    e.preventDefault();
-    if (!country || !paymentMethod) {
-      toast.error("Please complete all fields");
-      return;
-    }
-    setStep(2);
-  };
-
-  const handleFinalSubmit = async (e) => {
-    e.preventDefault();
+  const handleGoogleRegistration = async () => {
     setLoading(true);
-
     try {
-      await signInWithEmailAndPassword(auth, email, password);
-      toast.error("Email already in use. Try logging in.");
-      setIsLogin(true);
-      return;
-    } catch {}
+      const provider = new GoogleAuthProvider();
+      const result = await signInWithPopup(auth, provider);
 
-    try {
-      const userCred = await createUserWithEmailAndPassword(auth, email, password);
-      const user = userCred.user;
-      const isAdmin = user.email.toLowerCase() === ADMIN_EMAIL;
-      const referral_code = "kwik-" + user.uid.slice(-6);
-
-      await sendEmailVerification(user);
-      toast.success("📩 Verification email sent. Please check your inbox.");
-
-      await insertUserToSupabase({
-        email: email.toLowerCase(),
-        name,
-        referral_code,
-        referred_by: referralCode || null,
-        country,
-        payment_method: paymentMethod,
-        method: "Email",
-        payment_confirmed: isAdmin,
-        is_admin: isAdmin,
-      });
-
-      navigate(isAdmin ? "/admin" : "/verify-email");
+      toast.success("✅ Signed in with Google!");
+      setStep("done");
     } catch (error) {
-      console.error("Registration error:", error);
-      toast.error("Registration failed");
+      toast.error("❌ " + error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const setupRecaptcha = () => {
+    if (window.recaptchaVerifier) {
+      window.recaptchaVerifier.clear();
+    }
+    window.recaptchaVerifier = new RecaptchaVerifier(auth, "recaptcha-container", {
+      size: "invisible",
+      callback: () => {},
+    });
+  };
+
+  const handlePhoneRegistration = async () => {
+    if (!phoneNumber.startsWith("+")) {
+      toast.warn("❗ Please enter phone number in international format (e.g. +233...)");
+      return;
+    }
+
+    setupRecaptcha();
+    setLoading(true);
+    try {
+      const appVerifier = window.recaptchaVerifier;
+      const confirmation = await signInWithPhoneNumber(auth, phoneNumber, appVerifier);
+      setConfirmationResult(confirmation);
+      setStep("otp");
+    } catch (error) {
+      toast.error("❌ Error sending OTP: " + error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleOTPVerify = async () => {
+    setLoading(true);
+    try {
+      await confirmationResult.confirm(otp);
+      toast.success("✅ Phone registration successful!");
+      setStep("done");
+    } catch (error) {
+      toast.error("❌ Incorrect OTP");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <>
-      {showModal && <AnnouncementModal onClose={() => setShowModal(false)} />}
-      <div className="max-w-xl mx-auto mt-10 bg-white/10 p-8 rounded-lg shadow-md backdrop-blur border border-cyan-500 text-white">
-        <h2 className="text-2xl font-bold mb-4 text-cyan-300">
-          {isLogin ? "🔐 Login to KwikLoom" : "🚀 Register for KwikLoom"}
-        </h2>
+    <div className="max-w-md mx-auto bg-black text-white p-6 rounded shadow-md min-h-screen flex flex-col justify-center">
+      <h1 className="text-3xl font-bold mb-2 text-center text-green-400">
+        🎉 Welcome to KwikLoom!
+      </h1>
+      <p className="text-center text-gray-400 mb-6">
+        Sign up to start earning commissions and inviting friends. It's fast and free!
+      </p>
 
-        {isLogin ? (
-          <>
-            <button
-              onClick={handleGoogleSignIn}
-              className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-lg bg-white text-slate-900 font-semibold hover:bg-slate-100 shadow-md transition-all duration-300 transform hover:scale-105"
-            >
-              <FcGoogle className="text-xl" />
-              Continue with Google
-            </button>
-
-            <input
-              type="email"
-              placeholder="Email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-4 py-2 mt-4 mb-2 bg-[#0f172a] border border-cyan-600 rounded"
-            />
+      {step === "form" && (
+        <>
+          <input
+            type="text"
+            value={fullName}
+            onChange={(e) => setFullName(e.target.value)}
+            placeholder="Full Name"
+            className="w-full p-2 mb-3 bg-gray-700 text-white placeholder-gray-400 rounded"
+          />
+          <input
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="Email"
+            className="w-full p-2 mb-3 bg-gray-700 text-white placeholder-gray-400 rounded"
+          />
+          <div className="relative mb-3">
             <input
               type={showPassword ? "text" : "password"}
-              placeholder="Password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-4 py-2 mb-3 bg-[#0f172a] border border-cyan-600 rounded"
+              placeholder="Password"
+              className="w-full p-2 bg-gray-700 text-white placeholder-gray-400 rounded pr-10"
             />
-            <button onClick={handleEmailLogin} className={animatedBtn}>
-              🔐 Login
-            </button>
             <button
               type="button"
-              onClick={handlePasswordReset}
-              className="text-sm text-cyan-400 underline mt-2"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-2 top-1/2 transform -translate-y-1/2 text-sm text-gray-300"
             >
-              Forgot Password?
+              {showPassword ? "Hide" : "Show"}
             </button>
-            <button
-              type="button"
-              onClick={() => setIsLogin(false)}
-              className="mt-3 text-sm text-cyan-300 underline"
-            >
-              Don't have an account? Register
-            </button>
-          </>
-        ) : (
-          <form onSubmit={step === 1 ? handleInitialSubmit : handleFinalSubmit} className="space-y-4">
-            {step === 1 && (
-              <>
-                <input
-                  type="text"
-                  placeholder="Country"
-                  value={country}
-                  onChange={(e) => setCountry(e.target.value)}
-                  className="w-full px-4 py-2 bg-[#0f172a] border border-cyan-600 rounded"
-                />
-                <select
-                  value={paymentMethod}
-                  onChange={(e) => setPaymentMethod(e.target.value)}
-                  className="w-full px-4 py-2 bg-[#0f172a] border border-cyan-600 rounded"
-                >
-                  <option value="Bitcoin">Bitcoin</option>
-                </select>
-              </>
-            )}
+          </div>
 
-            {step === 2 && (
-              <>
-                <input
-                  type="text"
-                  placeholder="Full Name"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  className="w-full px-4 py-2 bg-[#0f172a] border border-cyan-600 rounded"
-                />
-                <input
-                  type="email"
-                  placeholder="Email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="w-full px-4 py-2 bg-[#0f172a] border border-cyan-600 rounded"
-                />
-                <input
-                  type={showPassword ? "text" : "password"}
-                  placeholder="Password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="w-full px-4 py-2 bg-[#0f172a] border border-cyan-600 rounded"
-                />
-                <input
-                  type="text"
-                  placeholder="Referral Code (optional)"
-                  value={referralCode}
-                  onChange={(e) => setReferralCode(e.target.value)}
-                  className="w-full px-4 py-2 bg-[#0f172a] border border-cyan-600 rounded"
-                />
-              </>
-            )}
+          <select
+            value={country}
+            onChange={(e) => setCountry(e.target.value)}
+            className="w-full p-2 mb-3 bg-gray-700 text-white rounded"
+            required
+          >
+            <option value="">🌍 Select Country</option>
+            {countries.map((c) => (
+              <option key={c.code} value={c.name}>
+                {c.flag} {c.name}
+              </option>
+            ))}
+          </select>
 
-            <button
-              type="submit"
-              disabled={loading}
-              className={`${animatedBtn} ${loading && "opacity-60 cursor-not-allowed"}`}
-            >
-              {loading ? "Please wait..." : step === 1 ? "Next Step →" : "✅ Register Now"}
-            </button>
+          <button
+            onClick={handleEmailRegistration}
+            disabled={loading}
+            className="w-full bg-green-600 hover:bg-green-700 p-2 rounded mb-3"
+          >
+            {loading ? "Registering..." : "✅ Register with Email"}
+          </button>
 
-            {step === 2 && (
-              <button
-                type="button"
-                onClick={() => setStep(1)}
-                className="w-full py-2 text-sm text-cyan-300 underline"
-              >
-                ← Back
-              </button>
-            )}
+          <button
+            onClick={handleGoogleRegistration}
+            disabled={loading}
+            className="w-full bg-blue-600 hover:bg-blue-700 p-2 rounded mb-3"
+          >
+            🔐 Sign up with Google
+          </button>
 
-            <button
-              type="button"
-              onClick={() => setIsLogin(true)}
-              className="w-full py-2 mt-2 text-sm text-cyan-300 underline"
-            >
-              Already have an account? Login
-            </button>
-          </form>
-        )}
-      </div>
-    </>
+          <div className="text-center my-2 text-gray-400">OR</div>
+
+          <input
+            type="text"
+            value={phoneNumber}
+            onChange={(e) => setPhoneNumber(e.target.value)}
+            placeholder="Phone Number (e.g. +233...)"
+            className="w-full p-2 mb-3 bg-gray-700 text-white placeholder-gray-400 rounded"
+          />
+          <div id="recaptcha-container"></div>
+          <button
+            onClick={handlePhoneRegistration}
+            disabled={loading}
+            className="w-full bg-yellow-600 hover:bg-yellow-700 p-2 rounded mb-3"
+          >
+            {loading ? "Sending OTP..." : "📱 Register with Phone"}
+          </button>
+
+          <p className="text-sm text-center text-gray-400">
+            Already have an account?{" "}
+            <a href="/login" className="text-blue-400 hover:underline">
+              Login
+            </a>
+          </p>
+        </>
+      )}
+
+      {step === "otp" && (
+        <>
+          <input
+            type="text"
+            value={otp}
+            onChange={(e) => setOtp(e.target.value)}
+            placeholder="Enter OTP"
+            className="w-full p-2 mb-3 bg-gray-700 text-white placeholder-gray-400 rounded"
+          />
+          <button
+            onClick={handleOTPVerify}
+            disabled={loading}
+            className="w-full bg-green-600 hover:bg-green-700 p-2 rounded mb-3"
+          >
+            {loading ? "Verifying..." : "✅ Verify OTP"}
+          </button>
+        </>
+      )}
+
+      {step === "done" && (
+        <div className="text-center text-green-400 font-semibold">
+          ✅ Registration successful! Redirecting...
+        </div>
+      )}
+    </div>
   );
-}
+};
+
+export default Register;

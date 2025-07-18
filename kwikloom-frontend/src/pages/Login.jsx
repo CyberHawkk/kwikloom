@@ -1,4 +1,5 @@
 // src/pages/Login.jsx
+
 import { useState, useEffect } from "react";
 import {
   signInWithEmailAndPassword,
@@ -7,13 +8,12 @@ import {
   signInWithPopup,
 } from "firebase/auth";
 import { auth, provider } from "../firebase";
-import { toast } from "react-toastify";
 import { supabase } from "../supabase";
 import { useNavigate, Link } from "react-router-dom";
-import { FcGoogle } from "react-icons/fc";
 import QRCode from "react-qr-code";
+import toast from "react-hot-toast";
+import { FcGoogle } from "react-icons/fc";
 import { ArrowLeft } from "lucide-react";
-import "react-toastify/dist/ReactToastify.css";
 import "@fontsource/sora";
 import "@fontsource/inter";
 
@@ -66,7 +66,6 @@ export default function Login() {
     try {
       const userCred = await signInWithEmailAndPassword(auth, email, password);
       const user = userCred.user;
-
       const isAdmin = user.email.toLowerCase() === ADMIN_EMAIL;
 
       if (isAdmin) {
@@ -88,11 +87,7 @@ export default function Login() {
         .eq("email", user.email.toLowerCase())
         .maybeSingle();
 
-      if (error) {
-        console.error("Supabase error:", error);
-        toast.error("Failed to fetch user data.");
-        return;
-      }
+      if (error) throw new Error("Supabase fetch failed");
 
       if (data?.payment_confirmed) {
         toast.success(`Welcome back, ${user.email}`);
@@ -113,8 +108,7 @@ export default function Login() {
     try {
       const result = await signInWithPopup(auth, provider);
       const user = result.user;
-
-      if (!user) return toast.error("Google Sign-In failed to return a user.");
+      if (!user) return toast.error("Google Sign-In failed");
 
       const isAdmin = user.email.toLowerCase() === ADMIN_EMAIL;
 
@@ -123,14 +117,14 @@ export default function Login() {
           email: user.email.toLowerCase(),
           referral_code: "kwik-" + user.uid.slice(-6),
           referred_by: "",
-          payment_confirmed: isAdmin ? true : false,
+          payment_confirmed: isAdmin,
           is_admin: isAdmin,
           phone: "",
         },
         { onConflict: "email" }
       );
 
-      toast.success(`Welcome, ${isAdmin ? "Admin" : user.displayName || user.email}`);
+      toast.success(`Welcome ${isAdmin ? "Admin" : user.displayName || user.email}`);
       navigate(isAdmin ? "/admin" : "/confirm-code");
     } catch (error) {
       console.error("Google login error:", error);
@@ -155,7 +149,7 @@ export default function Login() {
     }
 
     try {
-  const res = await fetch("https://kwikloom-backend.onrender.com/api/confirm-payment", {
+      const res = await fetch("https://kwikloom-backend.onrender.com/api/confirm-payment", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -174,13 +168,13 @@ export default function Login() {
       } else {
         toast.error(data.error || "Payment confirmation failed.");
       }
-    } catch (err) {
+    } catch {
       toast.error("An error occurred.");
     }
   };
 
   return (
-    <div className="min-h-screen bg-slate-900 text-white flex justify-center items-center px-4 relative">
+    <div className="min-h-screen bg-slate-900 text-white flex justify-center items-center px-4 relative font-sora">
       <button
         onClick={() => (window.history.length > 1 ? navigate(-1) : navigate("/"))}
         className="absolute top-6 left-6 flex items-center gap-2 text-cyan-300 hover:text-cyan-100 font-medium transition"
@@ -189,20 +183,23 @@ export default function Login() {
         <span className="hidden sm:inline">Back</span>
       </button>
 
-      <div className="w-full max-w-lg bg-white/10 p-6 rounded-xl border border-cyan-400 space-y-6 text-center">
+      <div className="w-full max-w-lg bg-white/10 p-6 rounded-xl border border-cyan-400 space-y-6 text-center shadow-xl">
         <h1 className="text-2xl font-bold text-cyan-300">🎉 Welcome to KwikLoom</h1>
         <p className="text-sm text-gray-300">
-          A secure, student-driven, crypto-powered referral platform.
+          Start your ₵100 BTC activation. Earn ₵20 per referral. <br />
+          <span className="italic text-gray-400">Crypto-powered. Student-friendly.</span>
         </p>
-        <QRCode
-          value="bc1qzllw832k6m6p5mk9tzp2pv3ys66sw6tta2w4u8"
-          size={140}
-          bgColor="#fff"
-          className="mx-auto"
-        />
-        <p className="text-yellow-400 font-mono text-sm">
-          bc1qzllw832k6m6p5mk9tzp2pv3ys66sw6tta2w4u8
-        </p>
+
+
+        <div className="text-xs text-gray-400 text-left">
+          <p className="mt-4">
+            Get started on <strong className="text-cyan-200">KwikLoom</strong> with a one-time{" "}
+            <strong className="text-yellow-300">₵100 BTC activation</strong>. Once registered,
+            you’ll receive a personal referral code. Share it with others — for every person who joins and activates using your code, you earn{" "}
+            <strong className="text-green-300">₵20 instantly</strong>. There’s no limit to how many people you can refer. And just like you, every new user can earn ₵20 per referral.{" "}
+            <em className="text-gray-400">It’s simple, fair, and built to grow with your network.</em>
+          </p>
+        </div>
 
         <input
           type="email"
@@ -236,7 +233,6 @@ export default function Login() {
           {loading ? "Logging in..." : "🔐 Login"}
         </button>
 
-        {/* ✅ Google Sign-In with icon */}
         <button
           onClick={handleGoogleLogin}
           className="w-full flex items-center justify-center gap-2 py-2 mt-3 bg-white text-slate-800 font-semibold rounded shadow hover:bg-slate-100 transition"

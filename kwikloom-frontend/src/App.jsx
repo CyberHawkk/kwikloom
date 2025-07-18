@@ -1,3 +1,5 @@
+""// src/App.jsx
+
 import React, { useEffect, useState } from "react";
 import {
   BrowserRouter as Router,
@@ -7,8 +9,11 @@ import {
   useNavigate,
 } from "react-router-dom";
 
+import PhoneLogin from "./pages/PhoneLogin";
+import Welcome from "./pages/Welcome";
 import Landing from "./pages/Landing";
 import Registration from "./pages/Registration";
+import PhoneAuth from "./pages/PhoneAuth";
 import Login from "./pages/Login";
 import ConfirmCode from "./pages/ConfirmCode";
 import Dashboard from "./pages/Dashboard";
@@ -21,10 +26,6 @@ import {
   auth,
   onAuthStateChanged,
   signOut,
-  db,
-  doc,
-  getDoc,
-  setDoc,
 } from "./firebase";
 import { supabase } from "./supabase";
 import { ToastContainer, toast } from "react-toastify";
@@ -37,7 +38,6 @@ import "@fontsource/inter";
 import BackgroundParticles from "./components/BackgroundParticles";
 import { motion } from "framer-motion";
 
-// 🔁 Referral Code Generator
 function generateReferralCode() {
   const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
   let code = "kwik-";
@@ -47,7 +47,6 @@ function generateReferralCode() {
   return code;
 }
 
-// 💸 Animated Bitcoin Logo
 function BouncingBTC() {
   return (
     <motion.div
@@ -71,7 +70,6 @@ function BouncingBTC() {
   );
 }
 
-// 🔒 Checks Supabase Payment Status
 function ProtectedRoute({ children }) {
   const [hasPaid, setHasPaid] = useState(null);
   const [checking, setChecking] = useState(true);
@@ -109,7 +107,27 @@ function ProtectedRoute({ children }) {
   return hasPaid ? children : <Navigate to="/confirm-code" replace />;
 }
 
-// 🎯 Main App Logic
+function PersistentWelcomeBanner() {
+  const [visible, setVisible] = useState(true);
+
+  if (!visible) return null;
+
+  return (
+    <div className="fixed top-0 left-0 w-full bg-cyan-600 text-white p-3 z-50 flex justify-between items-center shadow-lg">
+      <div>
+        🎉 Welcome Aboard! ₵100 BTC activation. 💡 Get referral code, earn ₵20 per referral — no limits!
+      </div>
+      <button
+        onClick={() => setVisible(false)}
+        className="ml-4 font-bold hover:text-yellow-300"
+        aria-label="Dismiss"
+      >
+        ×
+      </button>
+    </div>
+  );
+}
+
 function AppContent() {
   const [user, setUser] = useState(null);
   const [referralCode, setReferralCode] = useState("");
@@ -127,7 +145,7 @@ function AppContent() {
 
       setUser(currentUser);
 
-      const { data, error } = await supabase
+      const { data } = await supabase
         .from("users")
         .select("referral_code, is_admin")
         .eq("email", currentUser.email.toLowerCase())
@@ -150,51 +168,68 @@ function AppContent() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#0f0c29] via-[#302b63] to-[#24243e] font-sora text-white relative">
       <BackgroundParticles />
+      <PersistentWelcomeBanner />
 
-      <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-50">
+      <div className="absolute top-16 left-1/2 transform -translate-x-1/2 z-50">
         <BouncingBTC />
       </div>
 
       <Routes>
-        <Route path="/" element={<Landing />} />
+        <Route path="/" element={<Welcome />} />
+        <Route path="/landing" element={<Landing />} />
         <Route path="/register" element={<Registration />} />
         <Route path="/login" element={<Login />} />
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/confirm-code" element={<ConfirmCode />} />
-        <Route path="/activate" element={<ActivatePage />} />
         <Route path="/verify-email" element={<VerifyEmail />} />
+        <Route path="/phonelogin" element={<PhoneLogin />} />
+        <Route path="/phone-auth" element={<PhoneAuth />} />
 
-        {/* 🛡️ Admin Route */}
         <Route
-          path="/admin"
+          path="/activate"
           element={
-            isAdmin ? (
-              <AdminDashboard />
+            user ? (
+              user.emailVerified || user.phoneNumber ? (
+                <ActivatePage />
+              ) : (
+                <Navigate to="/verify-email" replace />
+              )
             ) : (
-              <Navigate to="/" replace />
+              <Navigate to="/login" replace />
             )
           }
         />
 
-        {/* 🎯 Dashboard Route with Admin Redirect */}
         <Route
           path="/dashboard"
           element={
-            isAdmin ? (
-              <Navigate to="/admin" replace />
+            user ? (
+              user.emailVerified || user.phoneNumber ? (
+                isAdmin ? (
+                  <Navigate to="/admin" replace />
+                ) : (
+                  <ProtectedRoute>
+                    <Dashboard
+                      user={user}
+                      referralCode={referralCode}
+                      onLogout={handleLogout}
+                    />
+                  </ProtectedRoute>
+                )
+              ) : (
+                <Navigate to="/verify-email" replace />
+              )
             ) : (
-              <ProtectedRoute>
-                <Dashboard
-                  user={user}
-                  referralCode={referralCode}
-                  onLogout={handleLogout}
-                />
-              </ProtectedRoute>
+              <Navigate to="/login" replace />
             )
           }
         />
 
-        {/* 🚫 404 fallback */}
+        <Route
+          path="/admin"
+          element={isAdmin ? <AdminDashboard /> : <Navigate to="/" replace />}
+        />
+
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
     </div>
