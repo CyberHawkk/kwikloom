@@ -1,28 +1,29 @@
-// tailwind.config.js
 /** @type {import('tailwindcss').Config} */
-export default {
+module.exports = {
   content: [
     "./index.html",
-    "./src/**/*.{js,ts,jsx,tsx}",
+    "./src/**/*.{js,jsx}",
   ],
   theme: {
     extend: {
-      colors: {
-        brand: {
-          dark: "#0a0f1c",
-          card: "#131a28",
-          accent: "#17b9a7",
-          accentLight: "#21e6c1",
-          text: "#e0f2f1",
-          muted: "#94a3b8",
-        },
-      },
       fontFamily: {
-        sans: ["Sora", "sans-serif"],
-        body: ["Inter", "sans-serif"],
+        sans: ['Inter', 'Sora', 'sans-serif'],
       },
-      boxShadow: {
-        soft: "0 4px 24px rgba(0, 0, 0, 0.3)",
+      colors: {
+        brand: '#1e40af',
+        gray: {
+          50: '#f9fafb',
+          100: '#f3f4f6',
+          200: '#e5e7eb',
+          300: '#d1d5db',
+          400: '#9ca3af',
+          500: '#6b7280',
+          600: '#4b5563',
+          700: '#374151',
+          800: '#1f2937',
+          900: '#111827',
+          950: '#0b0f19',
+        },
       },
     },
   },

@@ -1,111 +1,114 @@
+// src/pages/AdminDashboard.jsx
 import React, { useEffect, useState } from "react";
-import { supabase } from "../supabase";
-import { toast } from "react-toastify";
+import { auth, db } from "../firebase";
+import { signOut } from "firebase/auth";
+import { collection, getDocs, updateDoc, doc } from "firebase/firestore";
+import { useNavigate } from "react-router-dom";
+import { toast } from "react-hot-toast";
 
 export default function AdminDashboard() {
   const [users, setUsers] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const user = auth.currentUser;
+    if (!user) {
+      navigate("/login");
+      return;
+    }
+
+    // Only allow admin email
+    if (user.email !== "youradminemail@example.com") {
+      toast.error("Access denied: Admins only");
+      navigate("/");
+      return;
+    }
+  }, [navigate]);
 
   useEffect(() => {
     const fetchUsers = async () => {
-      const { data, error } = await supabase
-        .from("users")
-        .select("*")
-        .order("created_at", { ascending: false });
-
-      if (error) {
-        toast.error("Error fetching users");
-      } else {
-        setUsers(data);
+      try {
+        const snapshot = await getDocs(collection(db, "users"));
+        const allUsers = snapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+        setUsers(allUsers);
+      } catch {
+        toast.error("Failed to load users.");
       }
-      setLoading(false);
     };
-
     fetchUsers();
   }, []);
 
-  const togglePayment = async (email, currentStatus) => {
-    const { error } = await supabase
-      .from("users")
-      .update({ payment_confirmed: !currentStatus })
-      .eq("email", email);
-
-    if (error) {
-      toast.error("Error updating payment");
-    } else {
-      toast.success(
-        `Payment ${!currentStatus ? "confirmed" : "revoked"} for ${email}`
-      );
+  const handleVerifyEmail = async (userId) => {
+    try {
+      await updateDoc(doc(db, "users", userId), {
+        emailVerified: true,
+      });
+      toast.success("Email verified!");
       setUsers((prev) =>
-        prev.map((u) =>
-          u.email === email ? { ...u, payment_confirmed: !currentStatus } : u
-        )
+        prev.map((u) => (u.id === userId ? { ...u, emailVerified: true } : u))
       );
+    } catch {
+      toast.error("Failed to verify email.");
     }
   };
 
-  return (
-    <div className="min-h-screen bg-slate-900 text-white p-6">
-      <h1 className="text-3xl font-bold mb-6 text-center text-cyan-300">
-        🔐 Admin Dashboard
-      </h1>
+  const handleLogout = async () => {
+    await signOut(auth);
+    navigate("/login");
+  };
 
-      {loading ? (
-        <p className="text-center text-cyan-200">Loading users...</p>
-      ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full table-auto border-collapse border border-cyan-600">
-            <thead>
-              <tr className="bg-cyan-700 text-white">
-                <th className="border border-cyan-500 px-4 py-2">#</th>
-                <th className="border border-cyan-500 px-4 py-2">Email</th>
-                <th className="border border-cyan-500 px-4 py-2">Referral Code</th>
-                <th className="border border-cyan-500 px-4 py-2">Referred By</th>
-                <th className="border border-cyan-500 px-4 py-2">Paid</th>
-                <th className="border border-cyan-500 px-4 py-2">Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {users.map((user, i) => (
-                <tr
-                  key={user.email}
-                  className={`text-center ${
-                    user.payment_confirmed ? "bg-green-900" : "bg-red-900"
-                  }`}
-                >
-                  <td className="border border-cyan-500 px-2 py-1">{i + 1}</td>
-                  <td className="border border-cyan-500 px-2 py-1">
-                    {user.email}
-                  </td>
-                  <td className="border border-cyan-500 px-2 py-1">
-                    {user.referral_code}
-                  </td>
-                  <td className="border border-cyan-500 px-2 py-1">
-                    {user.referred_by || "-"}
-                  </td>
-                  <td className="border border-cyan-500 px-2 py-1">
-                    {user.payment_confirmed ? "✅ Yes" : "❌ No"}
-                  </td>
-                  <td className="border border-cyan-500 px-2 py-1">
-                    <button
-                      onClick={() =>
-                        togglePayment(user.email, user.payment_confirmed)
-                      }
-                      className={`px-3 py-1 rounded text-white font-semibold ${
-                        user.payment_confirmed
-                          ? "bg-red-500 hover:bg-red-600"
-                          : "bg-green-500 hover:bg-green-600"
-                      } transition duration-300`}
-                    >
-                      {user.payment_confirmed ? "Revoke" : "Confirm"}
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+  return (
+    <div className="max-w-6xl mx-auto p-6 mt-10 bg-white rounded-lg shadow-md text-black">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-3xl font-bold">🛠️ Admin Dashboard</h1>
+        <button
+          onClick={handleLogout}
+          className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded"
+        >
+          Log Out
+        </button>
+      </div>
+
+      <table className="w-full table-auto border-collapse border border-gray-300">
+        <thead>
+          <tr>
+            <th className="border border-gray-300 p-2">User ID</th>
+            <th className="border border-gray-300 p-2">Email</th>
+            <th className="border border-gray-300 p-2">Full Name</th>
+            <th className="border border-gray-300 p-2">Email Verified</th>
+            <th className="border border-gray-300 p-2">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {users.map((u) => (
+            <tr key={u.id} className="text-center">
+              <td className="border border-gray-300 p-2 break-all">{u.id}</td>
+              <td className="border border-gray-300 p-2">{u.email}</td>
+              <td className="border border-gray-300 p-2">{u.fullname || "-"}</td>
+              <td className="border border-gray-300 p-2">
+                {u.emailVerified ? (
+                  <span className="text-green-600 font-semibold">✅</span>
+                ) : (
+                  <span className="text-red-600 font-semibold">❌</span>
+                )}
+              </td>
+              <td className="border border-gray-300 p-2">
+                {!u.emailVerified && (
+                  <button
+                    onClick={() => handleVerifyEmail(u.id)}
+                    className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded"
+                  >
+                    Verify Email
+                  </button>
+                )}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }

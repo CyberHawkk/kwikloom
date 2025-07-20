@@ -1,156 +1,137 @@
-@import "@fontsource/sora";
-@import "@fontsource/inter";
-@import "@fontsource/orbitron";
+/* -----------------------------
+ ✅ Google Fonts
+------------------------------ */
+@import url('https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap');
 
+/* -----------------------------
+ ✅ Tailwind Base & Utilities
+------------------------------ */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* 🌌 Global Theme: Cyberpunk Background */
-html, body, #root {
-  height: 100%;
-  margin: 0;
-  padding: 0;
-  background-color: #0a0a23;
-  background-image:
-    radial-gradient(circle at 30% 30%, #00fff7 0%, transparent 40%),
-    radial-gradient(circle at 80% 80%, #ff00e0 0%, transparent 40%),
-    repeating-linear-gradient(135deg, #0a0a23 0, #0a0a23 10px, #0b0b2c 10px, #0b0b2c 20px),
-    linear-gradient(120deg, rgba(0,255,255,0.08), rgba(255,0,255,0.08));
-  background-blend-mode: screen;
+/* -----------------------------
+ ✅ High-Tech Background Layer
+------------------------------ */
+.high-tech-bg {
+  position: fixed;
+  inset: 0;
+  z-index: -10;
+  background: linear-gradient(135deg, #0a0f3d, #01010a);
   background-size: 400% 400%;
-  animation: background-pulse 30s ease-in-out infinite;
-  font-family: 'Inter', 'Sora', sans-serif;
-  color: #ffffffde;
+  animation: pulseBg 20s ease infinite;
+  opacity: 0.95;
 }
 
-/* 🔄 Animated shifting neon background */
-@keyframes background-pulse {
-  0%, 100% {
-    background-position: 0% 0%, 100% 100%, 0 0, 0 0;
+@keyframes pulseBg {
+  0% {
+    background-position: 0% 50%;
   }
   50% {
-    background-position: 50% 50%, 50% 50%, 20px 20px, 100% 0;
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
   }
 }
 
-/* 💎 Glassmorphism Containers */
-.glass-box {
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  border-radius: 1rem;
-  padding: 2rem;
-  box-shadow: 0 8px 32px 0 rgba(0,255,255,0.12);
+/* -----------------------------
+ ✅ Neon Glow (Titles)
+------------------------------ */
+.neon-glow {
+  text-shadow:
+    0 0 4px #00ffff,
+    0 0 8px #00ffff,
+    0 0 16px #00ffff,
+    0 0 32px #0ff,
+    0 0 64px #0ff;
 }
 
-/* ⚡ Neon Button (Solid) */
-.neon-btn {
-  background: linear-gradient(90deg, #00fff7, #00c6ff);
-  color: #0a0a0a;
-  border-radius: 12px;
-  padding: 0.7rem 1.5rem;
-  font-weight: 700;
-  font-family: 'Sora', sans-serif;
-  text-shadow: none;
-  box-shadow: 0 0 15px rgba(0,255,255,0.6);
-  transition: 0.3s ease-in-out;
-}
-.neon-btn:hover {
-  background: linear-gradient(90deg, #00e6ff, #00aaff);
-  box-shadow: 0 0 25px rgba(0,255,255,0.9);
-  transform: translateY(-1px) scale(1.02);
+/* -----------------------------
+ ✅ Global Body Styling
+------------------------------ */
+body {
+  @apply text-gray-100 font-[Rubik] min-h-screen;
+  background: radial-gradient(ellipse at top left, #0a0f3d 0%, #01010a 100%);
+  scroll-behavior: smooth;
 }
 
-/* 🧊 Neon Button (Outline / Alt) */
-.neon-btn-alt {
-  background: transparent;
-  color: #00fff7;
-  border: 2px solid #00fff7;
-  border-radius: 12px;
-  padding: 0.6rem 1.3rem;
-  font-weight: 600;
-  font-family: 'Sora', sans-serif;
-  transition: all 0.3s ease-in-out;
-}
-.neon-btn-alt:hover {
-  background: #00fff7;
-  color: #0a0a0a;
-  box-shadow: 0 0 25px #00fff7;
-  transform: translateY(-1px) scale(1.02);
+/* -----------------------------
+ ✅ Universal Form Elements
+------------------------------ */
+input,
+select,
+textarea {
+  @apply bg-gray-900 border border-gray-700 text-cyan-100 rounded-lg px-4 py-2 placeholder-cyan-300 transition-all duration-200;
 }
 
-/* 🔤 Typography Enhancements */
-h1, .heading-1 {
-  font-family: 'Orbitron', sans-serif;
-  font-size: 2.75rem;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  color: #00fff7;
-  text-transform: uppercase;
+input:focus,
+select:focus,
+textarea:focus {
+  outline: none;
+  box-shadow: 0 0 8px #00ffff;
 }
 
-h2, .heading-2 {
-  font-family: 'Orbitron', sans-serif;
-  font-size: 2rem;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  color: #00eaff;
+/* -----------------------------
+ ✅ Label Styling
+------------------------------ */
+label {
+  @apply text-sm font-medium text-cyan-300;
 }
 
-h3, .heading-3 {
-  font-family: 'Orbitron', sans-serif;
-  font-size: 1.5rem;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  color: #00c6ff;
+/* -----------------------------
+ ✅ Buttons (Default)
+------------------------------ */
+button {
+  @apply bg-gradient-to-r from-cyan-500 via-blue-600 to-purple-700 text-cyan-50 font-bold py-2 px-4 rounded-xl shadow-md hover:scale-105 transition-all duration-300;
 }
 
-p, .body-text {
-  font-family: 'Sora', sans-serif;
-  font-size: 1rem;
-  font-weight: 400;
-  color: #cbe8ff;
-  line-height: 1.65;
+button:focus {
+  outline: none;
+  box-shadow: 0 0 8px #00ffff;
 }
 
-/* 🏷️ Labels and Inputs */
-label, .label {
-  font-family: 'Sora', sans-serif;
-  font-weight: 600;
-  color: #00fff7;
-  text-transform: uppercase;
-  font-size: 0.85rem;
-  letter-spacing: 0.03em;
+/* Glowing button (optional effect) */
+.glow-button {
+  box-shadow:
+    0 0 8px #0ff,
+    0 0 16px #0ff,
+    0 0 24px #0ff,
+    0 0 32px #0ff;
 }
 
-/* 🖍️ Accent Color Utilities */
-.text-neon {
-  color: #00fff7;
-}
-.text-pink {
-  color: #ff00e0;
-}
-.text-soft {
-  color: #ffffffcc;
-}
-.text-glow {
-  color: #00fff7;
-  text-shadow: 0 0 5px #00fff7, 0 0 10px #00fff7;
+/* -----------------------------
+ ✅ Anchor Links
+------------------------------ */
+a {
+  @apply text-cyan-400 hover:text-cyan-200 underline transition;
 }
 
-/* 🧵 Scrollbar Styling */
-::-webkit-scrollbar {
-  width: 10px;
+/* -----------------------------
+ ✅ Card Component
+------------------------------ */
+.card {
+  @apply bg-gray-900 border border-gray-700 rounded-2xl p-6 shadow-md text-cyan-100;
 }
-::-webkit-scrollbar-track {
-  background: #0a0a23;
+
+/* -----------------------------
+ ✅ Section Wrapper
+------------------------------ */
+.section-container {
+  @apply max-w-5xl mx-auto px-6 py-10;
 }
-::-webkit-scrollbar-thumb {
-  background: #00fff7;
-  border-radius: 8px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: #00c6ff;
+
+/* -----------------------------
+ ✅ Responsive Utility
+------------------------------ */
+@media (max-width: 640px) {
+  .section-container {
+    @apply px-4 py-6;
+  }
+
+  h1,
+  h2,
+  h3 {
+    @apply text-center;
+  }
 }

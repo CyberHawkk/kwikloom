@@ -1,174 +1,198 @@
+// src/pages/Dashboard.jsx
 import React, { useEffect, useState } from "react";
-import { auth } from "../firebase";
-import { onAuthStateChanged } from "firebase/auth";
-import { QRCodeCanvas } from "qrcode.react";
-import "@fontsource/sora";
-import "@fontsource/orbitron";
-import { useNavigate } from "react-router-dom";
-import { toast } from "react-toastify";
+import { auth, db } from "../firebase";
+import { signOut } from "firebase/auth";
+import { doc, onSnapshot, getDoc } from "firebase/firestore";
+import { useNavigate, Link } from "react-router-dom";
+import { toast } from "react-hot-toast";
+
+// Game components
+import FlappyBird from "../games/FlappyBird";
+import TRexRunner from "../games/TRexRunner";
+import CandyCrush from "../games/CandyCrush";
+import Aviator from "../games/Aviator";
 
 export default function Dashboard() {
-  const [user, setUser] = useState(null);
+  const [userData, setUserData] = useState(null);
+  const [selectedGame, setSelectedGame] = useState(null);
   const [balance, setBalance] = useState(0);
-  const [referralCount, setReferralCount] = useState(0);
   const [referralCode, setReferralCode] = useState("");
-  const [copied, setCopied] = useState(false);
-  const [isWithdrawing, setIsWithdrawing] = useState(false);
-  const [withdrawMessage, setWithdrawMessage] = useState("");
-
   const navigate = useNavigate();
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (u) => {
-      if (u) {
-        if (!u.emailVerified) {
-          toast.error("Please verify your email to access the dashboard.");
-          navigate("/verify-email");
-          return;
+    const checkUserStatus = async () => {
+      const user = auth.currentUser;
+      if (!user) {
+        navigate("/login");
+        return;
+      }
+
+      try {
+        const userRef = doc(db, "users", user.uid);
+        const userSnap = await getDoc(userRef);
+
+        if (userSnap.exists()) {
+          const data = userSnap.data();
+
+          // Check if user is activated and payment is confirmed
+          if (data.activated === true && data.paymentConfirmed === true) {
+            // Subscribe to realtime updates after passing checks
+            const unsubscribe = onSnapshot(userRef, (docSnap) => {
+              if (docSnap.exists()) {
+                const updatedData = docSnap.data();
+                setUserData({ ...updatedData, uid: user.uid });
+                setBalance(updatedData.balance || 0);
+                setReferralCode(updatedData.referralCode || "");
+              }
+            });
+
+            return () => unsubscribe();
+          } else {
+            // Not activated or payment pending → redirect to /activate
+            navigate("/activate");
+          }
+        } else {
+          toast.error("User data not found.");
+          navigate("/login");
         }
-
-        setUser(u);
-        await fetchUserData(u.email);
-      } else {
-        setUser(null);
-        navigate("/"); // Optional: Redirect unauthenticated users
+      } catch (error) {
+        toast.error("Error fetching user data.");
+        navigate("/login");
       }
-    });
+    };
 
-    return () => unsubscribe();
-  }, []);
+    checkUserStatus();
+  }, [navigate]);
 
-  const fetchUserData = async (email) => {
+  const handleSignOut = async () => {
     try {
-      const res = await fetch(`http://localhost:5000/user?email=${email}`);
-      const data = await res.json();
-      if (res.ok) {
-        setBalance(data.balance || 0);
-        setReferralCount(data.referrals_count || 0);
-        setReferralCode(data.referral_code || "");
-      } else {
-        console.error(data.message);
-      }
+      await signOut(auth);
+      navigate("/login");
     } catch (error) {
-      console.error("Error fetching user data:", error);
+      toast.error("Failed to sign out.");
     }
   };
 
-  const handleWithdraw = async () => {
-    setIsWithdrawing(true);
-    setWithdrawMessage("");
-    try {
-      const res = await fetch("http://localhost:5000/withdraw", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: user.email }),
-      });
-      const data = await res.json();
-      if (res.ok) {
-        setWithdrawMessage("✅ Withdrawal request sent.");
-        setBalance((prev) => prev - data.amount);
-      } else {
-        setWithdrawMessage(data.message || "Withdrawal failed.");
-      }
-    } catch (err) {
-      setWithdrawMessage("An error occurred during withdrawal.");
-    } finally {
-      setIsWithdrawing(false);
+  const handleCopyReferralLink = () => {
+    const link = `${window.location.origin}/register?ref=${referralCode || userData?.uid}`;
+    navigator.clipboard.writeText(link);
+    toast.success("Referral link copied!");
+  };
+
+  const renderSelectedGame = () => {
+    switch (selectedGame) {
+      case "flappy":
+        return <FlappyBird />;
+      case "trex":
+        return <TRexRunner />;
+      case "candy":
+        return <CandyCrush />;
+      case "aviator":
+        return <Aviator />;
+      default:
+        return null;
     }
   };
 
-  const copyToClipboard = () => {
-    navigator.clipboard.writeText(referralCode);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
+  if (!userData) return <div className="text-center p-6">Loading dashboard...</div>;
 
   return (
-    <div className="min-h-screen bg-[#020c1b] text-white font-sora px-4 py-10 flex items-center justify-center">
-      <div className="w-full max-w-4xl space-y-10 bg-[#04192c] rounded-xl shadow-2xl p-8 relative">
+    <div className="max-w-4xl mx-auto p-6 mt-10 bg-white rounded-2xl shadow-md space-y-6">
+      <h1 className="text-2xl font-bold">🚀 Welcome back, {userData.fullname || "Player"}!</h1>
 
-        {/* ← Back to Sign In */}
+      {/* USER INFO */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="bg-gray-50 p-4 rounded-lg shadow">
+          <p className="font-semibold">User ID:</p>
+          <p className="text-sm break-all">{userData.uid}</p>
+        </div>
+        <div className="bg-gray-50 p-4 rounded-lg shadow">
+          <p className="font-semibold">Referral Code:</p>
+          <p className="text-sm">{referralCode}</p>
+        </div>
+        <div className="bg-gray-50 p-4 rounded-lg shadow">
+          <p className="font-semibold">Referral Earnings:</p>
+          <p className="text-lg font-bold text-green-600">₵{balance.toFixed(2)}</p>
+        </div>
+        <div className="bg-gray-50 p-4 rounded-lg shadow">
+          <p className="font-semibold">Profile Completion:</p>
+          <div className="w-full bg-gray-200 rounded-full h-3 mt-2">
+            <div className="bg-blue-500 h-3 rounded-full w-[60%]"></div>
+          </div>
+          <p className="text-xs mt-1">60% Complete</p>
+        </div>
+      </div>
+
+      {/* ACTION BUTTONS */}
+      <div className="space-y-2">
         <button
-          onClick={() => navigate(-1)}
-          className="absolute top-4 right-4 text-sm text-cyan-300 hover:underline"
+          onClick={handleCopyReferralLink}
+          className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-2 rounded-lg font-semibold"
         >
-          ← Back
+          🔗 Copy My Referral Link
         </button>
+        <button
+          onClick={handleSignOut}
+          className="w-full bg-red-500 hover:bg-red-600 text-white py-2 rounded-lg font-semibold"
+        >
+          🔓 Sign Out
+        </button>
+      </div>
 
-        {/* 🪙 Bouncing Bitcoin Icon */}
-        <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 animate-bounce">
-          <img
-            src="/bitcoin.png"
-            alt="Bitcoin"
-            className="w-14 h-14"
-            onError={(e) => {
-              e.target.onerror = null;
-              e.target.src = "https://cryptologos.cc/logos/bitcoin-btc-logo.png";
-            }}
-          />
-        </div>
+      {/* GAME OPTIONS */}
+      <div className="mt-10 space-y-4">
+        <h2 className="text-xl font-semibold text-center">🎮 Play & Earn Games</h2>
 
-        <h1 className="text-2xl font-bold text-cyan-300 text-center font-orbitron">
-          {user ? `Welcome, ${user.displayName || user.email}` : "Welcome"}
-        </h1>
-
-        {/* 🔢 Referral Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-center">
-          <div className="bg-[#09342b] p-6 rounded-xl shadow-lg">
-            <h2 className="text-lg text-green-400 font-semibold">Balance</h2>
-            <p className="text-3xl font-bold">₵{balance}</p>
-          </div>
-          <div className="bg-[#07292c] p-6 rounded-xl shadow-lg">
-            <h2 className="text-lg text-yellow-400 font-semibold">Referrals</h2>
-            <p className="text-3xl font-bold">{referralCount}</p>
-          </div>
-          <div className="bg-[#121f33] p-6 rounded-xl shadow-lg border border-cyan-400">
-            <h2 className="text-lg text-cyan-300 font-semibold">Your Referral Code</h2>
-            <code className="text-xl font-mono block mt-2 text-white">
-              {referralCode}
-            </code>
-            <button
-              onClick={copyToClipboard}
-              className="mt-3 px-4 py-1 text-sm bg-cyan-600 hover:bg-cyan-700 rounded-md"
-            >
-              {copied ? "Copied!" : "Copy Code"}
-            </button>
-          </div>
-        </div>
-
-        {/* 📤 QR to Share Referral */}
-        <div className="bg-[#0f1c2d] rounded-xl p-6 text-center border border-cyan-600">
-          <h2 className="text-lg text-purple-300 font-semibold mb-4">
-            Share Your Referral Code
-          </h2>
-          <QRCodeCanvas
-            value={referralCode || "default-code"}
-            size={160}
-            bgColor="#ffffff"
-            fgColor="#000000"
-            level="H"
-            includeMargin={true}
-            className="mx-auto"
-          />
-        </div>
-
-        {/* 🏧 Withdraw Button */}
-        <div className="text-center mt-6">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           <button
-            onClick={handleWithdraw}
-            disabled={isWithdrawing || balance < 100}
-            className={`px-6 py-3 rounded-lg font-semibold transition ${
-              isWithdrawing || balance < 100
-                ? "bg-gray-600 cursor-not-allowed"
-                : "bg-gradient-to-r from-[#1bb89f] to-[#32e0c4] hover:opacity-90"
-            }`}
+            onClick={() => setSelectedGame("flappy")}
+            className="bg-blue-100 hover:bg-blue-300 text-blue-900 font-semibold py-2 rounded-lg shadow"
           >
-            {isWithdrawing ? "Processing..." : "Request Withdrawal"}
+            🐤 Flappy Bird
           </button>
-          {withdrawMessage && (
-            <p className="mt-2 text-yellow-400 text-sm">{withdrawMessage}</p>
+          <button
+            onClick={() => setSelectedGame("trex")}
+            className="bg-green-100 hover:bg-green-300 text-green-900 font-semibold py-2 rounded-lg shadow"
+          >
+            🦖 T-Rex Runner
+          </button>
+          <button
+            onClick={() => setSelectedGame("candy")}
+            className="bg-pink-100 hover:bg-pink-300 text-pink-900 font-semibold py-2 rounded-lg shadow"
+          >
+            🍬 Candy Crush
+          </button>
+          <button
+            onClick={() => setSelectedGame("aviator")}
+            className="bg-purple-100 hover:bg-purple-300 text-purple-900 font-semibold py-2 rounded-lg shadow"
+          >
+            ✈️ Aviator
+          </button>
+        </div>
+
+        <div className="mt-6 bg-gray-100 p-6 rounded-xl shadow-inner">
+          {selectedGame ? (
+            renderSelectedGame()
+          ) : (
+            <p className="text-center text-gray-600">Select a game to play!</p>
           )}
         </div>
+      </div>
+
+      {/* EXTRAS */}
+      <div className="mt-6 space-y-4">
+        <h2 className="text-xl font-semibold">🔔 Notifications</h2>
+        <p className="text-sm text-gray-600">No new notifications yet.</p>
+
+        <h2 className="text-xl font-semibold">🏆 Leaderboard</h2>
+        <p className="text-sm text-gray-600">Coming soon…</p>
+
+        <Link
+          to="/games"
+          className="text-blue-500 hover:underline text-sm block text-center mt-4"
+        >
+          🎮 View All Games
+        </Link>
       </div>
     </div>
   );

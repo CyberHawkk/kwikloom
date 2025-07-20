@@ -1,26 +1,18 @@
-// BackButton.jsx
+// src/components/BackButton.jsx
 import React from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft } from "lucide-react"; // Optional icon library
+import { ArrowLeftCircle } from "lucide-react"; // Optional: Replace with IoArrowBack if preferred
 
-export default function BackButton({ fallback = "/", label = "Back", className = "" }) {
+export default function BackButton({ label = "Back", className = "" }) {
   const navigate = useNavigate();
-
-  const handleBack = () => {
-    if (window.history.length > 1) {
-      navigate(-1);
-    } else {
-      navigate(fallback);
-    }
-  };
 
   return (
     <button
-      onClick={handleBack}
-      className={`flex items-center gap-2 text-cyan-400 hover:underline ${className}`}
+      onClick={() => navigate(-1)}
+      className={`flex items-center gap-2 px-4 py-2 text-white bg-gradient-to-r from-purple-600 to-indigo-600 hover:opacity-90 rounded-full shadow-lg transition-all duration-300 ${className}`}
     >
-      <ArrowLeft size={18} />
-      <span>{label}</span>
+      <ArrowLeftCircle className="w-5 h-5" />
+      {label}
     </button>
   );
 }
