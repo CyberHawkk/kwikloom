@@ -1,14 +1,15 @@
-# Ignore environment variables
-.env
+# Ignore secret keys
+kwikloom-backend/serviceAccountKey.json
 
-# Ignore Node modules
-node_modules/
+# Node modules
+**/node_modules/
 
-# Ignore logs
-logs
+# Logs
 *.log
-npm-debug.log*
 
-# Ignore other system files
+# Env files
+*.env
+
+# Other system files
 .DS_Store
 Thumbs.db
