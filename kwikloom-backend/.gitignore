@@ -1,16 +1,15 @@
-# Node build/deps
-node_modules/
+# Ignore secret keys
+kwikloom-backend/serviceAccountKey.json
 
-# Environment files
-.env
-serviceAccountKey.json
+# Node modules
+**/node_modules/
 
 # Logs
-logs/
 *.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
 
-# OS
+# Env files
+*.env
+
+# Other system files
 .DS_Store
+Thumbs.db

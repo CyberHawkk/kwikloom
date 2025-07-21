@@ -17,6 +17,7 @@ import Dashboard from "./pages/Dashboard";
 import Games from "./pages/Games";
 import Verify from "./pages/Verify";
 import AdminDashboard from "./pages/AdminDashboard";
+import "./index.css";
 
 const ADMIN_EMAILS = ["qwikearn@gmail.com"]; // ✅ Admins skip activation
 

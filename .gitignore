@@ -38,3 +38,6 @@ coverage/
 
 # Git
 .git/
+
+# Secrets
+**/serviceAccountKey.json
